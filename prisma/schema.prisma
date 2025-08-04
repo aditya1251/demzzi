@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum RequestStatus {
+  NEW
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  FILE
+  DATE
+  DROPDOWN
+  CHECKBOX
+}
+
+enum RevenueSource {
+  SUBMISSION
+  REQUEST
+  SERVICE_PURCHASE
+  MANUAL
+  OTHER
+}
+
+// USER
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  phone         String?
+  location      String?
+  password      String?
+  image         String?
+  role          Role         @default(USER)
+  emailVerified DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  isDeleted     Boolean      @default(false)
+
+  accounts      Account[]
+  sessions      Session[]
+  requests      Request[]
+  submissions   Submission[]
+  contactForms  ContactRequest[]
+  revenue       Revenue[]
+}
+
+model Service {
+  id          String            @id @default(cuid())
+  title       String
+  description String
+  imageUrl    String?
+  timeline    String
+  features    String[]
+  price       Float             @default(0)            
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  isDeleted   Boolean           @default(false)
+
+  formFields  ServiceFormField[]
+  requests    Request[]
+  submissions Submission[]
+}
+
+model ServiceFormField {
+  id          String      @id @default(cuid())
+  service     Service     @relation(fields: [serviceId], references: [id])
+  serviceId   String
+  label       String
+  name        String
+  type        FieldType
+  required    Boolean     @default(false)
+  placeholder String?
+  options     String[]    // used for dropdowns
+  order       Int         @default(0)
+  isFixed     Boolean     @default(false)
+  isDeleted   Boolean     @default(false)
+}
+
+model Request {
+  id           String          @id @default(cuid())
+  user         User            @relation(fields: [userId], references: [id])
+  userId       String
+  service      Service         @relation(fields: [serviceId], references: [id])
+  serviceName  String
+  serviceId    String
+  amount       Float           @default(0)
+  status       RequestStatus   @default(PENDING)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  isDeleted    Boolean         @default(false)
+  adminNote    String?        
+  attachments  String[]        
+  submissions  Submission[]    
+}
+
+model Submission {
+  id          String        @id @default(cuid())
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  request     Request       @relation(fields: [requestId], references: [id])
+  requestId   String
+  service     Service       @relation(fields: [serviceId], references: [id])
+  serviceId   String
+
+  formData    Json
+  submittedAt DateTime      @default(now())
+  status      RequestStatus @default(PENDING)
+  updatedAt   DateTime      @updatedAt
+  isDeleted   Boolean       @default(false)
+}
+
+model Revenue {
+  id         String         @id @default(cuid())
+  amount     Float
+  label      String?
+  note       String?
+  source     RevenueSource  @default(MANUAL)
+  relatedId  String?        // requestId or submissionId
+  user       User?          @relation(fields: [userId], references: [id])
+  userId     String?
+  isRefund   Boolean        @default(false)
+  discount   Float?         
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  isDeleted  Boolean        @default(false)
+}
+
+model ContactRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  subject   String
+  message   String
+  responded Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  isDeleted         Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  isDeleted    Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+}
