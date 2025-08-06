@@ -23,6 +23,7 @@ export async function POST(req: Request) {
                     name: formData.name || undefined,
                     phone: formData.phone || undefined,
                     location: formData.location || undefined,
+                    newAccount: true,
                 },
             })
         }

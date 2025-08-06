@@ -15,7 +15,7 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email) return null;
 
         const user = await prisma.user.findFirst({
           where: {
@@ -23,6 +23,20 @@ const handler = NextAuth({
             isDeleted: false,
           },
         });
+
+        if (user && user.newAccount) {
+          const hashed = await bcrypt.hash(credentials.password, 10);
+          await prisma.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              password: hashed,
+              newAccount: false,
+            },
+          });
+          return user;
+        }
 
         if (user && user.password && bcrypt.compareSync(credentials.password, user.password)) {
           return user;
@@ -74,6 +88,7 @@ const handler = NextAuth({
           });
           return true;
         }
+
         return false;
       }
 
@@ -101,7 +116,6 @@ const handler = NextAuth({
           },
         });
       }
-
       return true;
     },
 

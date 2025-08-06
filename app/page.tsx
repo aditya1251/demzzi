@@ -121,7 +121,7 @@ function SplashScreen({ onComplete }: { onComplete: () => void }) {
         {/* DEMZZI Button */}
         <div className="mb-8 animate-slide-up delay-300">
           <div className="bg-green-800 text-white text-2xl font-bold py-4 px-12 rounded-full shadow-lg">
-            DEMZZI
+            DEMZZIXPERT
           </div>
         </div>
 
@@ -163,7 +163,7 @@ function LandingPage() {
 
       <header className="hidden fixed bg-white shadow-sm lg:flex w-full items-center justify-between   z-20 ">
         <div className="mx-auto gap-52 flex max-w-8xl items-center justify-between px-6 py-4">
-          <div className="text-2xl font-bold text-main">DEMZZI</div>
+          <div className="text-2xl font-bold text-black">DEMZZI<span className="text-green-700">XPERT</span></div>
           <nav className="flex text-[#1c2d25] font-medium tracking-wider items-center space-x-8">
             <Button variant="link" onClick={() => router.push("/")}>
               Home
@@ -199,7 +199,7 @@ function LandingPage() {
 
       {/* Mobile Header */}
       <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white shadow-sm">
-        <div className="text-xl font-bold text-green-800">DEMZZI</div>
+        <div className="text-xl font-bold text-green-800">DEMZZI<span className="text-green-700">XPERT</span></div>
         <div className="flex items-center space-x-1">
           <div className="w-2 h-2 bg-green-600 rounded-full"></div>
           <div className="w-4 h-2 bg-green-600 rounded-sm"></div>
@@ -431,7 +431,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-4 gap-12">
         {/* Brand + Tagline */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">DEMZZI</h2>
+          <h2 className="text-2xl font-bold mb-4">DEMZZI<span className="text-green-700">XPERT</span></h2>
           <p className="text-sm text-gray-300 leading-relaxed">
             Simplifying compliance for thousands of businesses with fast,
             affordable, and expert solutions.
@@ -455,7 +455,7 @@ function Footer() {
           <ul className="space-y-2 text-sm text-gray-300">
             <li><Link href="/about">About Us</Link></li>
             <li><Link href="/contact">Contact</Link></li>
-            <li><Link href="/privacy-policy">Privacy Policy</Link></li>
+            <li><Link href="/privacy">Privacy Policy</Link></li>
             <li><Link href="/terms">Terms of Service</Link></li>
           </ul>
         </div>
@@ -465,20 +465,20 @@ function Footer() {
           <h3 className="text-lg font-semibold mb-3">Contact</h3>
           <ul className="space-y-3 text-sm text-gray-300">
             <li className="flex items-center gap-2">
-              <Mail size={16} /> support@demzzi.com
+              <Mail size={16} /> support@demzzixpert.online
             </li>
             <li className="flex items-center gap-2">
-              <Phone size={16} /> +91 93765 43210
+              <Phone size={16} /> +91 70601 40150
             </li>
             <li className="flex items-center gap-2">
-              <MapPin size={16} /> Mumbai, India
+              <MapPin size={16} /> Mumbai, Maharashtra 40001, India
             </li>
           </ul>
         </div>
       </div>
 
       <div className="mt-12 text-center text-sm text-gray-400 border-t border-green-800 pt-6">
-        © {new Date().getFullYear()} DEMZZI. All rights reserved.
+        © {new Date().getFullYear()} DEMZZIXPERT. All rights reserved.
       </div>
     </footer>
   );

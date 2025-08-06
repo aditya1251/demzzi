@@ -12,7 +12,7 @@ export async function GET() {
       where: { status: { in: ["PENDING", "NEW"] }, isDeleted: false },
     }),
     prisma.request.count({
-      where: { status: "COMPLETE", isDeleted: false },
+      where: { status: "COMPLETED", isDeleted: false },
     }),
   ])
 
@@ -24,7 +24,7 @@ export async function GET() {
       select: { name: true, createdAt: true },
     }),
     prisma.request.findMany({
-      where: { status: "NEW", isDeleted: false },
+      where: { status: "PENDING", isDeleted: false },
       orderBy: { updatedAt: "desc" },
       take: 3,
       select: {

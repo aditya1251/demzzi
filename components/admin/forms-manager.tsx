@@ -49,6 +49,7 @@ export function FormsManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const fieldTypes = [
     { value: "TEXT", label: "Text" },
@@ -80,7 +81,6 @@ export function FormsManager() {
         })
       );
 
-
       setFormConfigs(servicesWithForms);
       setLoading(false);
     };
@@ -97,20 +97,25 @@ export function FormsManager() {
   const handleSaveForm = async () => {
     if (!editingForm) return;
 
-    const res = await fetch(`/api/admin/services/${editingForm.id}/form`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fields: editingForm.fields }),
-    });
+    setSaving(true);
 
-    if (res.ok) {
-      setFormConfigs((prev) =>
-        prev.map((f) => (f.id === editingForm.id ? editingForm : f))
-      );
+    try {
+      const res = await fetch(`/api/admin/services/${editingForm.id}/form`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: editingForm.fields }),
+      });
+
+      if (res.ok) {
+        setFormConfigs((prev) =>
+          prev.map((f) => (f.id === editingForm.id ? editingForm : f))
+        );
+        setIsDialogOpen(false);
+        setEditingForm(null);
+      }
+    } finally {
+      setSaving(false);
     }
-
-    setIsDialogOpen(false);
-    setEditingForm(null);
   };
 
   const handleAddField = () => {
@@ -183,7 +188,11 @@ export function FormsManager() {
         </p>
       </div>
 
-      {loading && <div className="flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}
+      {loading && (
+        <div className="flex justify-center">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      )}
 
       {/* Cards for each form */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -464,9 +473,14 @@ export function FormsManager() {
                   </Button>
                   <Button
                     onClick={handleSaveForm}
+                    disabled={saving}
                     className="bg-green-600 hover:bg-green-700">
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Form
+                    {saving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {saving ? "Saving..." : "Save Form"}
                   </Button>
                 </div>
               </TabsContent>

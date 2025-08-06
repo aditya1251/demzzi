@@ -17,7 +17,7 @@ export async function GET(
     const fields = await prisma.serviceFormField.findMany({
       where: {
         serviceId,
-        isDeleted: false, // ⬅️ exclude soft-deleted fields
+        isDeleted: false,
       },
       orderBy: { order: 'asc' },
     });
@@ -28,8 +28,6 @@ export async function GET(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-
-// PUT /api/admin/services/[id]/form
 export async function PUT(
   req: NextRequest,
   context: { params: { id?: string } }

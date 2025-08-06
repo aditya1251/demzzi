@@ -16,9 +16,25 @@ export async function POST(req: Request) {
     },
   });
 
-  if (existingUser) {
+  if (existingUser && existingUser.newAccount) {
+    const hashed = await bcrypt.hash(password, 10);
+    await prisma.user.update({
+      where: {
+        id: existingUser.id,
+      },
+      data: {
+        name,
+        password: hashed,
+        newAccount: false,
+      },
+    });
+    return NextResponse.json({ message: "User created", user: existingUser });
+  }
+
+  if (existingUser && existingUser.isDeleted === false) {
     return NextResponse.json({ message: "User already exists" }, { status: 400 });
   }
+
 
   const hashed = await bcrypt.hash(password, 10);
 
