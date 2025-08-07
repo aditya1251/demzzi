@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 // Define which routes to protect
-const adminRoutes = ["/admin", "/api/admin"];
+const adminRoutes = ["/administration", "/api/admin"];
 
 export async function middleware(req: NextRequest) {
   const token = await getToken({ req });
@@ -27,5 +27,5 @@ export async function middleware(req: NextRequest) {
 
 // Only run middleware on these routes
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/administration/:path*", "/api/admin/:path*"],
 };
