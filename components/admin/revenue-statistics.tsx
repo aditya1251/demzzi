@@ -27,6 +27,13 @@ import {
   Calendar,
 } from "lucide-react";
 
+type RevenueSource =
+  | "SUBMISSION"
+  | "REQUEST"
+  | "SERVICE_PURCHASE"
+  | "MANUAL"
+  | "OTHER";
+
 interface RevenueEntry {
   id: string;
   amount: number;
@@ -34,12 +41,16 @@ interface RevenueEntry {
   description: string;
   date: string;
   month: string;
+  source: RevenueSource; // Use the enum type
 }
 
 export function RevenueStatistics() {
   const [revenueEntries, setRevenueEntries] = useState<RevenueEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<RevenueEntry | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10); // You can add control later to let users change limit
+  const [totalPages, setTotalPages] = useState(1);
 
   const categories = [
     "GST Registration",
@@ -51,32 +62,41 @@ export function RevenueStatistics() {
 
   // Fetch real data
   useEffect(() => {
-    const fetchRevenue = async () => {
-      try {
-        const res = await fetch("/api/admin/revenue");
-        if (!res.ok) throw new Error("Failed to fetch revenue");
-        const data = await res.json();
+  const fetchRevenue = async () => {
+    try {
+      const res = await fetch(`/api/admin/revenue?page=${page}&limit=${limit}`);
+      if (!res.ok) throw new Error("Failed to fetch revenue");
 
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          amount: item.amount,
-          category: item.label || "Other",
-          description: item.note || "",
-          date: item.createdAt.split("T")[0],
-          month: new Date(item.createdAt).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          }),
-        }));
+      const result = await res.json();
 
-        setRevenueEntries(mapped);
-      } catch (err) {
-        console.error("Error fetching revenue:", err);
-      }
-    };
+      const mapped = result.data.map((item: any) => ({
+        id: item.id,
+        amount: item.amount,
+        category: item.label || "Other",
+        description: item.note || "",
+        date: item.createdAt.split("T")[0],
+        month: new Date(item.createdAt).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+        source: item.source,
+      }));
 
-    fetchRevenue();
-  }, []);
+      setRevenueEntries(mapped);
+      setTotalPages(result.totalPages);
+
+      // ⬅️ Set accurate totals from backend
+      setTotalRevenue(result.summary.totalRevenue);
+      setThisMonthRevenue(result.summary.thisMonthRevenue);
+      setTotalEntries(result.summary.totalEntries);
+    } catch (err) {
+      console.error("Error fetching revenue:", err);
+    }
+  };
+
+  fetchRevenue();
+}, [page, limit]);
+
 
   const handleAddEntry = () => {
     setEditingEntry({
@@ -85,6 +105,7 @@ export function RevenueStatistics() {
       category: "GST Registration",
       description: "",
       date: new Date().toISOString().split("T")[0],
+      source: "MANUAL",
       month: new Date().toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
@@ -179,17 +200,10 @@ export function RevenueStatistics() {
     }
   };
 
-  const totalRevenue = revenueEntries.reduce(
-    (sum, entry) => sum + entry.amount,
-    0
-  );
-  const currentMonth = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-  const currentMonthRevenue = revenueEntries
-    .filter((entry) => entry.month === currentMonth)
-    .reduce((sum, entry) => sum + entry.amount, 0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [currentMonthRevenue, setThisMonthRevenue] = useState(0);
+  const [totalEntries, setTotalEntries] = useState(0);  
+
 
   const categoryTotals = categories
     .map((category) => ({
@@ -257,7 +271,7 @@ export function RevenueStatistics() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Entries</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {revenueEntries.length}
+                  {totalEntries}
                 </p>
               </div>
               <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -269,7 +283,7 @@ export function RevenueStatistics() {
       </div>
 
       {/* Breakdown by Category */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Revenue by Category</CardTitle>
         </CardHeader>
@@ -290,7 +304,7 @@ export function RevenueStatistics() {
             ))}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Entries List */}
       <Card>
@@ -317,22 +331,44 @@ export function RevenueStatistics() {
                     ₹{entry.amount.toLocaleString()}
                   </p>
                 </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditEntry(entry)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteEntry(entry.id)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                </div>
+
+                {entry.source === "MANUAL" && (
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditEntry(entry)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteEntry(entry.id)}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
+          </div>
+          <div className="flex justify-center items-center space-x-2 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}>
+              Previous
+            </Button>
+            <span className="text-sm">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}>
+              Next
+            </Button>
           </div>
         </CardContent>
       </Card>

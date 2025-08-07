@@ -14,6 +14,8 @@ import {
   MessageSquare,
   LogOut,
   FileText,
+  Contact2,
+  Star,
 } from "lucide-react"
 import { UsersList } from "./users-list"
 import { RevenueStatistics } from "./revenue-statistics"
@@ -25,6 +27,8 @@ import { ContactManager } from "./contact-manager"
 import AdminOverview from "./admin-overview"
 import { signOut } from "next-auth/react"
 import { FormsManager } from "./forms-manager"
+import ContactDetailsEditor from "./ContactDetailsEditor"
+import AdminReviewManager from "./AdminReviewManager"
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -42,6 +46,8 @@ export function AdminDashboard() {
     { id: "forms", label: "Form Builder", icon: FileText },
     // { id: "pricing", label: "Pricing", icon: DollarSign },
     { id: "contact", label: "Contact Us", icon: MessageSquare },
+    { id: "reviews", label: "Reviews", icon: Star },
+    { id: "contactDetails", label: "Contact Details", icon: Contact2 },
   ]
 
   return (
@@ -118,6 +124,9 @@ export function AdminDashboard() {
           {activeTab === "forms" && <FormsManager />}
           {/* {activeTab === "pricing" && <PricingManager />} */}
           {activeTab === "contact" && <ContactManager />}
+          {activeTab === "contactDetails" && <ContactDetailsEditor />}
+          {activeTab === "reviews" && <AdminReviewManager />}
+
         </main>
       </div>
     </div>

@@ -2,35 +2,62 @@ import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
+import { Prisma } from "@prisma/client"
 
 dayjs.extend(relativeTime)
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const search = searchParams.get("search") || ""
-  const status = searchParams.get("status") || "all"
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "all";
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const limit = parseInt(searchParams.get("limit") || "10", 10);
+  const skip = (page - 1) * limit;
 
-  const requests = await prisma.request.findMany({
-    where: {
-      isDeleted: false, // ✅ exclude soft-deleted requests
-      AND: [
-        status !== "all" ? { status: status.toUpperCase() as any } : {},
-        {
-          OR: [
-            { user: { name: { contains: search, mode: "insensitive" } } },
-            { serviceName: { contains: search, mode: "insensitive" } },
-          ],
-        },
-      ],
-    },
-    include: {
-      user: true,
-      service: true
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  })
+  const whereCondition: Prisma.RequestWhereInput = {
+    isDeleted: false,
+    AND: [
+      status !== "all" ? { status: status.toUpperCase() as any } : {},
+      {
+        OR: [
+          {
+            user: {
+              is: {
+                name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+          },
+          {
+            serviceName: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  const [requests, total] = await Promise.all([
+    prisma.request.findMany({
+      where: whereCondition,
+      include: {
+        user: true,
+        service: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.request.count({
+      where: whereCondition,
+    }),
+  ]);
 
   const formatted = requests.map((req) => ({
     id: req.id,
@@ -42,7 +69,12 @@ export async function GET(req: NextRequest) {
     requestDate: req.createdAt.toISOString(),
     timeAgo: dayjs(req.createdAt).fromNow(),
     description: req.service?.description ?? "",
-  }))
+  }));
 
-  return NextResponse.json({ requests: formatted })
+  return NextResponse.json({
+    requests: formatted,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 }

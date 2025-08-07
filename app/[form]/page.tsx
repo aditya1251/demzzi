@@ -149,7 +149,7 @@ export default function FormPage() {
     );
   }
 
-  if (notFound || !formConfig) {
+  if (notFound || !formConfig ) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
@@ -319,7 +319,7 @@ type FileUploaderProps = {
   placeholder?: string;
 };
 
-function FileUploader({
+export function FileUploader({
   name,
   value,
   onUpload,

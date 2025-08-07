@@ -152,7 +152,7 @@ function LandingPage() {
   useEffect(() => {
     // @ts-ignore
     if (session?.user && session.user.role === "ADMIN") {
-      router.push("/admin");
+      router.push("/administration");
       return;
     }
   }, [session]);
@@ -223,7 +223,7 @@ function LandingPage() {
                 fingertips.
               </p>
               <Button
-                onClick={() => router.push("/gst")}
+                onClick={() => router.push("/services")}
                 className="bg-green-800 hover:bg-green-900 text-white group-hover:translate-x-2 px-8 py-7 text-lg rounded-full group">
                 <span className="group-hover:translate-x-2">
                   Start Registration
@@ -353,10 +353,12 @@ function LandingPage() {
 import { Star } from "lucide-react";
 
 function TestimonialCard({
+  id,
   name,
   role,
   quote,
 }: {
+  id: string;
   name: string;
   role: string;
   quote: string;
@@ -382,27 +384,37 @@ function TestimonialCard({
   );
 }
 
+
+import { useState } from "react";
+
+interface Testimonial {
+  id: string;
+  name: string;
+  role: string;
+  quote: string; // alias for `review`
+}
+
 function TestimonialsSection() {
-  const testimonials = [
-    {
-      name: "Rajesh Kumar",
-      role: "CEO, TechStart",
-      quote:
-        "DEMZZI made our GST registration incredibly simple. Their expert team guided us through every step.",
-    },
-    {
-      name: "Priya Sharma",
-      role: "Freelancer",
-      quote:
-        "Excellent service for ITR filing. Professional, quick, and experience.",
-    },
-    {
-      name: "Amit Patel",
-      role: "Business Owner",
-      quote:
-        "Their trademark registration service saved us months of paperwork. Highly recommended.",
-    },
-  ];
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then((res) => res.json())
+      .then((data) => {
+        const formatted = data.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          role: r.role,
+          quote: r.review,
+        }));
+        setTestimonials(formatted);
+      })
+      .catch(() => {
+        setTestimonials([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <section className="bg-[#f6fbf4] px-4 lg:px-6 py-12">
@@ -410,11 +422,18 @@ function TestimonialsSection() {
         <h2 className="text-3xl lg:text-4xl font-bold text-green-800 mb-12 text-center">
           What Our Clients Say
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <TestimonialCard key={index} {...testimonial} />
-          ))}
-        </div>
+
+        {loading ? (
+          <p className="text-center text-gray-500">Loading testimonials...</p>
+        ) : testimonials.length === 0 ? (
+          <p className="text-center text-gray-400">No testimonials available.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial) => (
+              <TestimonialCard key={testimonial.id} {...testimonial} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -427,11 +446,11 @@ import ServicesSection from "@/components/serviceSection";
 
 function Footer() {
   return (
-    <footer className="hidden lg:block bg-green-900 text-white px-12 py-14">
-      <div className="max-w-7xl mx-auto grid grid-cols-4 gap-12">
+    <footer className="bg-green-900 text-white px-4 sm:px-6 lg:px-12 py-8 sm:py-10 lg:py-14">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
         {/* Brand + Tagline */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">DEMZZI<span className="text-green-700">XPERT</span></h2>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">DEMZZI<span className="text-green-700">XPERT</span></h2>
           <p className="text-sm text-gray-300 leading-relaxed">
             Simplifying compliance for thousands of businesses with fast,
             affordable, and expert solutions.
@@ -465,19 +484,21 @@ function Footer() {
           <h3 className="text-lg font-semibold mb-3">Contact</h3>
           <ul className="space-y-3 text-sm text-gray-300">
             <li className="flex items-center gap-2">
-              <Mail size={16} /> support@demzzixpert.online
+              <Mail size={16} /> 
+              <span className="break-all">support@demzzixpert.online</span>
             </li>
             <li className="flex items-center gap-2">
               <Phone size={16} /> +91 70601 40150
             </li>
             <li className="flex items-center gap-2">
-              <MapPin size={16} /> Mumbai, Maharashtra 40001, India
+              <MapPin size={16} /> 
+              <span>Mumbai, Maharashtra 40001, India</span>
             </li>
           </ul>
         </div>
       </div>
 
-      <div className="mt-12 text-center text-sm text-gray-400 border-t border-green-800 pt-6">
+      <div className="mt-8 sm:mt-10 lg:mt-12 text-center text-sm text-gray-400 border-t border-green-800 pt-6">
         © {new Date().getFullYear()} DEMZZIXPERT. All rights reserved.
       </div>
     </footer>

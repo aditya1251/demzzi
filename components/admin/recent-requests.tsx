@@ -59,19 +59,24 @@ export function RecentRequests() {
     null
   );
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10; // can be made adjustable
 
   useEffect(() => {
-    async function loadRequests() {
-      const resp = await fetch(
-        `/api/admin/requests?search=${encodeURIComponent(
-          searchTerm
-        )}&status=${encodeURIComponent(statusFilter)}`
-      );
-      const data = await resp.json();
-      setRequests(data.requests);
-    }
-    loadRequests();
-  }, [searchTerm, statusFilter]);
+  async function loadRequests() {
+    const resp = await fetch(
+      `/api/admin/requests?search=${encodeURIComponent(
+        searchTerm
+      )}&status=${encodeURIComponent(statusFilter)}&page=${page}&limit=${limit}`
+    );
+    const data = await resp.json();
+    setRequests(data.requests);
+    setTotalPages(data.totalPages);
+  }
+  loadRequests();
+}, [searchTerm, statusFilter, page]);
+
 
   const statusCounts = {
     new: requests.filter((r) => r.status === "new").length,
@@ -245,6 +250,28 @@ export function RecentRequests() {
                   View Submissions
                 </Button>
               </div>
+              {requests.length > 0 && (
+  <div className="flex justify-center items-center gap-4 mt-6">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+      disabled={page === 1}>
+      Previous
+    </Button>
+    <span className="text-sm text-gray-600">
+      Page {page} of {totalPages}
+    </span>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+      disabled={page === totalPages}>
+      Next
+    </Button>
+  </div>
+)}
+
             </CardContent>
           </Card>
         ))}

@@ -13,13 +13,30 @@ import {
   MapPin,
   Clock,
   ArrowRight,
+  PhoneCall,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MobileNav } from "@/components/mobile-nav";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ContactPage() {
   const router = useRouter();
+  const [contactDetails, setContactDetails] = useState<{
+    phone?: string;
+    WhatsApp?: string;
+  }>({});
+
+  useEffect(() => {
+    fetch("/api/contact-details")
+      .then((res) => res.json())
+      .then((data) => {
+        setContactDetails({
+          phone: data?.phone || "",
+          WhatsApp: data?.WhatsApp || "",
+        });
+      });
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -123,15 +140,70 @@ export default function ContactPage() {
           <p className="text-green-100 text-lg mb-8">
             We're here to help you with all your compliance needs
           </p>
-          <Button
-            onClick={() => router.push("#contact-form")}
-            className="bg-white text-green-800 hover:bg-green-100 group-hover:translate-x-2 px-8 py-4 text-lg rounded-full group">
-            <span className="group-hover:translate-x-2">Send us a message</span>
-            <ArrowRight
-              size={20}
-              className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform"
-            />
-          </Button>
+          <div className="flex flex-col gap-3 w-full max-w-md mx-auto">
+            <Button
+              onClick={() => router.push("#contact-form")}
+              className="w-full bg-white text-green-800 hover:bg-green-100 group-hover:translate-x-2 px-8 py-4 text-lg rounded-full group">
+              <span className="group-hover:translate-x-2">
+                Send us a message
+              </span>
+              <ArrowRight
+                size={20}
+                className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform"
+              />
+            </Button>
+            <Button
+              onClick={() => {
+                if (contactDetails.WhatsApp) {
+                  window.open(
+                    `https://wa.me/${contactDetails.WhatsApp.replace(
+                      /\D/g,
+                      ""
+                    )}`,
+                    "_blank"
+                  );
+                } else {
+                  alert("WhatsApp number not available");
+                }
+              }}
+              className="w-full bg-green-500 text-white hover:bg-green-600 group-hover:translate-x-2 px-8 py-4 text-lg rounded-full group">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="#ffffff"
+                version="1.1"
+                id="Capa_1"
+                width="800px"
+                height="800px"
+                viewBox="0 0 30.667 30.667"
+                className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform">
+                <g>
+                  <path d="M30.667,14.939c0,8.25-6.74,14.938-15.056,14.938c-2.639,0-5.118-0.675-7.276-1.857L0,30.667l2.717-8.017   c-1.37-2.25-2.159-4.892-2.159-7.712C0.559,6.688,7.297,0,15.613,0C23.928,0.002,30.667,6.689,30.667,14.939z M15.61,2.382   c-6.979,0-12.656,5.634-12.656,12.56c0,2.748,0.896,5.292,2.411,7.362l-1.58,4.663l4.862-1.545c2,1.312,4.393,2.076,6.963,2.076   c6.979,0,12.658-5.633,12.658-12.559C28.27,8.016,22.59,2.382,15.61,2.382z M23.214,18.38c-0.094-0.151-0.34-0.243-0.708-0.427   c-0.367-0.184-2.184-1.069-2.521-1.189c-0.34-0.123-0.586-0.185-0.832,0.182c-0.243,0.367-0.951,1.191-1.168,1.437   c-0.215,0.245-0.43,0.276-0.799,0.095c-0.369-0.186-1.559-0.57-2.969-1.817c-1.097-0.972-1.838-2.169-2.052-2.536   c-0.217-0.366-0.022-0.564,0.161-0.746c0.165-0.165,0.369-0.428,0.554-0.643c0.185-0.213,0.246-0.364,0.369-0.609   c0.121-0.245,0.06-0.458-0.031-0.643c-0.092-0.184-0.829-1.984-1.138-2.717c-0.307-0.732-0.614-0.611-0.83-0.611   c-0.215,0-0.461-0.03-0.707-0.03S9.897,8.215,9.56," />
+                </g>
+              </svg>
+              <span className="group-hover:translate-x-2">
+                Chat on WhatsApp
+              </span>
+            </Button>
+            <Button
+              onClick={() => {
+                if (contactDetails.phone) {
+                  window.open(`tel:${contactDetails.phone}`, "_self");
+                } else {
+                  alert("Phone number not available");
+                }
+              }}
+              className="w-full bg-green-500 text-white hover:bg-green-600 group-hover:translate-x-2 px-8 py-4 text-lg rounded-full group">
+              <PhoneCall
+                size={20}
+                className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform"
+              />
+              <span className="group-hover:translate-x-2">Call Us</span>
+              <ArrowRight
+                size={20}
+                className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform"
+              />
+            </Button>
+          </div>
         </div>
       </section>
       {/* Contact Form */}

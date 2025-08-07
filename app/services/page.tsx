@@ -32,7 +32,7 @@ type Service = {
   price: number;
   timeline?: string;
   imageUrl?: string;
-  active?: boolean; // added optional active flag for coming soon
+  isActive?: boolean; // added optional active flag for coming soon
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -71,7 +71,9 @@ function SkeletonCard() {
 function ServiceCard({ service, onNavigate }: { service: Service; onNavigate: (id: string) => void; }) {
   const Icon =
     service.id === "gst" ? CheckSquare : service.id === "itr" ? FileText : Building;
-  const comingSoon = service.active === false || service.active === undefined ? false : !service.active;
+  const comingSoon = !service.isActive;
+  
+  console.log("Service Card:", service);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!comingSoon && (e.key === "Enter" || e.key === " ")) {

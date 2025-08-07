@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { FileUploader } from "@/app/[form]/page";
 
 interface Service {
   id: string;
@@ -90,16 +91,12 @@ export function ServicesManager() {
       await fetchServices();
       setIsDialogOpen(false);
       setEditingService(null);
-    } catch (error:any) {
+    } catch (error: any) {
       alert(error.message);
     } finally {
       setIsSaving(false);
     }
   };
-
-  // ... existing code ...
-
-  // ... existing JSX ...
 
   const handleDeleteService = async (id: string) => {
     if (!confirm("Are you sure you want to delete this service?")) return;
@@ -280,16 +277,18 @@ export function ServicesManager() {
               </div>
 
               <div className="space-y-2">
-                <Label>Image URL</Label>
-                <Input
-                  value={editingService.imageUrl || ""}
-                  onChange={(e) =>
+                <Label>Service Image</Label>
+                <FileUploader
+                  name="image"
+                  value={editingService.imageUrl}
+                  onUpload={(url) =>
                     setEditingService({
                       ...editingService,
-                      imageUrl: e.target.value,
+                      imageUrl: url,
                     })
                   }
-                  placeholder="https://example.com/image.jpg"
+                  onError={(msg) => alert(`Image upload failed: ${msg}`)}
+                  placeholder="Upload service image (JPG, PNG, PDF, etc.)"
                 />
               </div>
 
