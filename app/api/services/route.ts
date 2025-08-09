@@ -7,7 +7,7 @@ export async function GET() {
       isDeleted: false, // Exclude soft-deleted services
     },
     orderBy: {
-      createdAt: "asc",
+      priority: "asc",
     },
   });
 

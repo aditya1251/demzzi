@@ -22,7 +22,7 @@ function SplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -445,6 +445,15 @@ import Link from "next/link";
 import ServicesSection from "@/components/serviceSection";
 
 function Footer() {
+
+  const [data, setData] = useState<any>([]);
+
+
+  useEffect(() => {
+    fetch("/api/contact-details").then((res) => res.json()).then((data) => {
+      setData(data);
+    });
+  },[])
   return (
     <footer className="bg-green-900 text-white px-4 sm:px-6 lg:px-12 py-8 sm:py-10 lg:py-14">
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
@@ -485,10 +494,10 @@ function Footer() {
           <ul className="space-y-3 text-sm text-gray-300">
             <li className="flex items-center gap-2">
               <Mail size={16} /> 
-              <span className="break-all">support@demzzixpert.online</span>
+              <span className="break-all">{data.email}</span>
             </li>
             <li className="flex items-center gap-2">
-              <Phone size={16} /> +91 70601 40150
+              <Phone size={16} /> {data.phone}
             </li>
             <li className="flex items-center gap-2">
               <MapPin size={16} /> 

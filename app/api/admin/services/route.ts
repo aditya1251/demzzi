@@ -7,7 +7,16 @@ export async function POST(req: Request) {
 
   const { title, description, price, timeline, features, isActive, imageUrl } = body;
 
-  // Create service with isDeleted: false
+  // Find current highest priority
+  const highestPriority = await prisma.service.aggregate({
+    _max: {
+      priority: true,
+    },
+  });
+
+  const nextPriority = (highestPriority._max.priority ?? 0) + 1;
+
+  // Create service with isDeleted: false and highest priority
   const service = await prisma.service.create({
     data: {
       title,
@@ -17,11 +26,12 @@ export async function POST(req: Request) {
       features,
       isActive,
       imageUrl,
-      isDeleted: false, // ⬅️ explicitly set
+      isDeleted: false,
+      priority: nextPriority, // ⬅️ set highest priority
     },
   });
 
-  // Create default form fields with isDeleted: false
+  // Create default form fields
   await prisma.serviceFormField.createMany({
     data: [
       {

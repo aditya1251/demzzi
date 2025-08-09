@@ -40,19 +40,19 @@ enum RevenueSource {
 
 // USER
 model User {
-  id            String       @id @default(cuid())
+  id            String           @id @default(cuid())
   name          String?
-  email         String?      @unique
+  email         String?          @unique
   phone         String?
   location      String?
   password      String?
   image         String?
-  role          Role         @default(USER)
+  role          Role             @default(USER)
   emailVerified DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  isDeleted     Boolean      @default(false)
-  newAccount    Boolean      @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  isDeleted     Boolean          @default(false)
+  newAccount    Boolean          @default(false)
   accounts      Account[]
   sessions      Session[]
   requests      Request[]
@@ -62,63 +62,63 @@ model User {
 }
 
 model Service {
-  id          String            @id @default(cuid())
+  id          String             @id @default(cuid())
   title       String
   description String
   imageUrl    String?
   timeline    String
   features    String[]
-  price       Float             @default(0)            
-  isActive    Boolean           @default(true)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  isDeleted   Boolean           @default(false)
-
+  price       Float              @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  isDeleted   Boolean            @default(false)
+  priority    Int                @default(0)
   formFields  ServiceFormField[]
   requests    Request[]
   submissions Submission[]
 }
 
 model ServiceFormField {
-  id          String      @id @default(cuid())
-  service     Service     @relation(fields: [serviceId], references: [id])
+  id          String    @id @default(cuid())
+  service     Service   @relation(fields: [serviceId], references: [id])
   serviceId   String
   label       String
   name        String
   type        FieldType
-  required    Boolean     @default(false)
+  required    Boolean   @default(false)
   placeholder String?
-  options     String[]    // used for dropdowns
-  order       Int         @default(0)
-  isFixed     Boolean     @default(false)
-  isDeleted   Boolean     @default(false)
+  options     String[] // used for dropdowns
+  order       Int       @default(0)
+  isFixed     Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
 }
 
 model Request {
-  id           String          @id @default(cuid())
-  user         User            @relation(fields: [userId], references: [id])
-  userId       String
-  service      Service         @relation(fields: [serviceId], references: [id])
-  serviceName  String
-  serviceId    String
-  amount       Float           @default(0)
-  status       RequestStatus   @default(PENDING)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  isDeleted    Boolean         @default(false)
-  adminNote    String?        
-  attachments  String[]        
-  submissions  Submission[]    
-}
-
-model Submission {
   id          String        @id @default(cuid())
   user        User          @relation(fields: [userId], references: [id])
   userId      String
-  request     Request       @relation(fields: [requestId], references: [id])
-  requestId   String
   service     Service       @relation(fields: [serviceId], references: [id])
+  serviceName String
   serviceId   String
+  amount      Float         @default(0)
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  isDeleted   Boolean       @default(false)
+  adminNote   String?
+  attachments String[]
+  submissions Submission[]
+}
+
+model Submission {
+  id        String  @id @default(cuid())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  request   Request @relation(fields: [requestId], references: [id])
+  requestId String
+  service   Service @relation(fields: [serviceId], references: [id])
+  serviceId String
 
   formData    Json
   submittedAt DateTime      @default(now())
@@ -128,19 +128,19 @@ model Submission {
 }
 
 model Revenue {
-  id         String         @id @default(cuid())
-  amount     Float
-  label      String?
-  note       String?
-  source     RevenueSource  @default(MANUAL)
-  relatedId  String?        // requestId or submissionId
-  user       User?          @relation(fields: [userId], references: [id])
-  userId     String?
-  isRefund   Boolean        @default(false)
-  discount   Float?         
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-  isDeleted  Boolean        @default(false)
+  id        String        @id @default(cuid())
+  amount    Float
+  label     String?
+  note      String?
+  source    RevenueSource @default(MANUAL)
+  relatedId String? // requestId or submissionId
+  user      User?         @relation(fields: [userId], references: [id])
+  userId    String?
+  isRefund  Boolean       @default(false)
+  discount  Float?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  isDeleted Boolean       @default(false)
 }
 
 model ContactRequest {
@@ -155,8 +155,8 @@ model ContactRequest {
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)
 
-  user      User?    @relation(fields: [userId], references: [id])
-  userId    String?
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
 }
 
 model Account {
@@ -172,9 +172,10 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  isDeleted         Boolean  @default(false)
+  isDeleted         Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id])
+
   @@unique([provider, providerAccountId])
 }
 
@@ -189,21 +190,21 @@ model Session {
 }
 
 model ContactDetails {
-  id          String   @id @default(cuid())
-  phone       String?
-  WhatsApp    String?
-  email       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  phone     String?
+  WhatsApp  String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Review {
   id        String   @id @default(cuid())
-  name      String   
-  role      String  
-  avatar    String? 
+  name      String
+  role      String
+  avatar    String?
   review    String
-  rating    Int      // 1–5
+  rating    Int // 1–5
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

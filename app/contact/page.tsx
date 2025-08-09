@@ -120,8 +120,8 @@ export default function ContactPage() {
             <Button variant="link" onClick={() => router.push("/services")}>
               Services
             </Button>
-            <Button variant="link" onClick={() => router.push("/pricing")}>
-              Pricing
+            <Button variant="link" onClick={() => router.push("/requests")}>
+              Requests
             </Button>
             <Button variant="link" onClick={() => router.push("/about")}>
               About Us

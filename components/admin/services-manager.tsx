@@ -12,8 +12,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, GripVertical } from "lucide-react";
 import { FileUploader } from "@/app/[form]/page";
+
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Service {
   id: string;
@@ -23,7 +39,42 @@ interface Service {
   timeline: string;
   features: string[];
   price: number;
+  priority: number;
   isActive: boolean;
+}
+
+function SortableServiceCard({
+  service,
+  children,
+}: {
+  service: Service;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: service.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    border: isDragging ? "2px dashed #4ade80" : "none",
+    borderRadius: "0.75rem",
+    backgroundColor: isDragging ? "#f0fdf4" : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div
+        className="flex items-center justify-between bg-gray-100 px-2 py-1 rounded-t-lg cursor-grab"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="text-gray-500" />
+        <span className="text-xs text-gray-400">Drag</span>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function ServicesManager() {
@@ -33,7 +84,11 @@ export function ServicesManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load all services from backend
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
+
   const fetchServices = async () => {
     setLoading(true);
     const res = await fetch("/api/services");
@@ -46,6 +101,22 @@ export function ServicesManager() {
     fetchServices();
   }, []);
 
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = services.findIndex((s) => s.id === active.id);
+    const newIndex = services.findIndex((s) => s.id === over.id);
+    const newServices = arrayMove(services, oldIndex, newIndex);
+    setServices(newServices);
+
+    await fetch("/api/admin/services/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds: newServices.map((s) => s.id) }),
+    });
+  };
+
   const handleAddService = () => {
     setEditingService({
       id: "",
@@ -55,6 +126,7 @@ export function ServicesManager() {
       timeline: "",
       features: [""],
       price: 0,
+      priority: services.length + 1,
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -65,11 +137,8 @@ export function ServicesManager() {
     setIsDialogOpen(true);
   };
 
-  // ... existing code ...
-
   const handleSaveService = async () => {
     if (!editingService) return;
-
     setIsSaving(true);
 
     const method = editingService.id ? "PUT" : "POST";
@@ -83,10 +152,7 @@ export function ServicesManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingService),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to save service");
-      }
+      if (!res.ok) throw new Error("Failed to save service");
 
       await fetchServices();
       setIsDialogOpen(false);
@@ -133,12 +199,13 @@ export function ServicesManager() {
             Manage Services
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
-            Add, edit, or remove services offered by DEMZZI
+            Add, edit, reorder (drag), or remove services
           </p>
         </div>
         <Button
           onClick={handleAddService}
-          className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+          className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Service
         </Button>
@@ -149,78 +216,64 @@ export function ServicesManager() {
       ) : services.length === 0 ? (
         <p className="text-gray-500">No services found.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {services.map((service) => (
-            <Card
-              key={service.id}
-              className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                {service.imageUrl && (
-                  <img
-                    src={service.imageUrl}
-                    alt={service.title}
-                    className="w-full h-32 object-cover rounded-lg mb-4"
-                  />
-                )}
-
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800">
-                    {service.title}
-                  </h3>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditService(service)}
-                      className="p-2">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteService(service.id)}
-                      className="p-2">
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                </div>
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {service.description}
-                </p>
-
-                <div className="space-y-2 mb-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Price:</span>
-                    <span className="font-semibold">
-                      ₹{service.price.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Timeline:</span>
-                    <span className="font-semibold">{service.timeline}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Status:</span>
-                    <span
-                      className={`font-semibold ${
-                        service.isActive ? "text-green-600" : "text-red-600"
-                      }`}>
-                      {service.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-gray-500 truncate">
-                  Features: {service.features.join(", ")}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={services.map((s) => s.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((service) => (
+                <SortableServiceCard key={service.id} service={service}>
+                  <Card className="hover:shadow-lg transition-shadow rounded-b-lg">
+                    <CardContent className="p-4 sm:p-6">
+                      {service.imageUrl && (
+                        <img
+                          src={service.imageUrl}
+                          alt={service.title}
+                          className="w-full h-32 object-cover rounded-lg mb-4"
+                        />
+                      )}
+                      <div className="flex items-start justify-between mb-4">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-800">
+                          {service.title}
+                        </h3>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditService(service)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteService(service.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-sm mb-4">
+                        {service.description}
+                      </p>
+                      <div className="text-xs text-gray-500 truncate">
+                        Features: {service.features.join(", ")}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </SortableServiceCard>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
-      {/* Dialog */}
+      {/* Dialog for Add/Edit */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
           <DialogHeader>
@@ -228,7 +281,6 @@ export function ServicesManager() {
               {editingService?.id ? "Edit Service" : "Add New Service"}
             </DialogTitle>
           </DialogHeader>
-
           {editingService && (
             <div className="space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -288,7 +340,7 @@ export function ServicesManager() {
                     })
                   }
                   onError={(msg) => alert(`Image upload failed: ${msg}`)}
-                  placeholder="Upload service image (JPG, PNG, PDF, etc.)"
+                  placeholder="Upload service image"
                 />
               </div>
 
@@ -322,7 +374,8 @@ export function ServicesManager() {
                       variant="outline"
                       size="sm"
                       onClick={() => removeFeature(index)}
-                      disabled={editingService.features.length === 1}>
+                      disabled={editingService.features.length === 1}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -331,7 +384,8 @@ export function ServicesManager() {
                   type="button"
                   variant="outline"
                   onClick={addFeature}
-                  className="w-full bg-transparent">
+                  className="w-full bg-transparent"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Feature
                 </Button>
@@ -356,13 +410,15 @@ export function ServicesManager() {
                 <Button
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
-                  disabled={isSaving}>
+                  disabled={isSaving}
+                >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveService}
                   className="bg-green-600 hover:bg-green-700"
-                  disabled={isSaving}>
+                  disabled={isSaving}
+                >
                   {isSaving ? "Saving..." : "Save Service"}
                 </Button>
               </div>
