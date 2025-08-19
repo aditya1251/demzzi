@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, CheckCircle, Upload, X } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 

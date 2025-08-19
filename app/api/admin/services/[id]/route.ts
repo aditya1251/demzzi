@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slugify";
 
 interface Params {
   params?: { id?: string };
@@ -15,7 +16,7 @@ export async function GET(_: Request, { params }: Params) {
   const service = await prisma.service.findFirst({
     where: {
       id,
-      isDeleted: false, // ⬅️ Exclude soft-deleted services
+      isDeleted: false,
     },
   });
 
@@ -39,18 +40,33 @@ export async function PUT(req: Request, { params }: Params) {
   }
 
   const body = await req.json();
-  const { title, description, price, timeline, features, isActive, imageUrl } = body;
+  const { title, description, price, timeline, features, isActive, imageUrl, categoryId } = body;
+
+  let slug = existing.slug;
+
+  // if title changed, regenerate slug
+  if (title && title !== existing.title) {
+    const baseSlug = slugify(title);
+    slug = baseSlug;
+    let counter = 1;
+
+    while (await prisma.service.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter++}`;
+    }
+  }
 
   const updated = await prisma.service.update({
     where: { id },
     data: {
       title,
       description,
-      price: parseFloat(price),
+      price: price ? parseFloat(price) : existing.price,
       timeline,
       features,
       isActive,
       imageUrl,
+      categoryId: categoryId ?? existing.categoryId,
+      slug,
     },
   });
 
@@ -64,10 +80,11 @@ export async function DELETE(_: Request, { params }: Params) {
     return NextResponse.json({ error: "Missing service ID" }, { status: 400 });
   }
 
-  // Soft delete instead of hard delete
   await prisma.service.update({
     where: { id },
-    data: { isDeleted: true },
+    data: { isDeleted: true,
+      slug: null,
+     },
   });
 
   return NextResponse.json({ success: true });

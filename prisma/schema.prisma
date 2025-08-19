@@ -61,22 +61,58 @@ model User {
   revenue       Revenue[]
 }
 
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  imageUrl  String?
+  isDeleted Boolean   @default(false)
+  priority  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  services  Service[]
+}
+
 model Service {
-  id          String             @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
+  slug        String?  @unique // ✅ for SEO URLs
   description String
   imageUrl    String?
   timeline    String
   features    String[]
-  price       Float              @default(0)
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  isDeleted   Boolean            @default(false)
-  priority    Int                @default(0)
-  formFields  ServiceFormField[]
-  requests    Request[]
-  submissions Submission[]
+  price       Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted   Boolean  @default(false)
+  priority    Int      @default(0)
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  servvicePageDetails ServicePageDetails[]
+  formFields          ServiceFormField[]
+  requests            Request[]
+  submissions         Submission[]
+  @@index([isActive, priority])
+}
+
+model ServicePageDetails {
+  id          String    @id @default(cuid())
+  service     Service   @relation(fields: [serviceId], references: [id])
+  serviceId   String    @unique
+  content     ContentSection[]  // Rich content blocks like "What is GST", "Types of GST"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+}
+
+model ContentSection {
+  id          String   @id @default(cuid())
+  pageId      String
+  page        ServicePageDetails @relation(fields: [pageId], references: [id])
+  title       String
+  image        String?  
+  content     Json 
+  order       Int      @default(0)
 }
 
 model ServiceFormField {

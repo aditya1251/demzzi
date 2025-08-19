@@ -41,6 +41,7 @@ interface Service {
   price: number;
   priority: number;
   isActive: boolean;
+  categoryId?: string;
 }
 
 function SortableServiceCard({
@@ -50,8 +51,14 @@ function SortableServiceCard({
   service: Service;
   children: React.ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: service.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: service.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,8 +74,7 @@ function SortableServiceCard({
       <div
         className="flex items-center justify-between bg-gray-100 px-2 py-1 rounded-t-lg cursor-grab"
         {...attributes}
-        {...listeners}
-      >
+        {...listeners}>
         <GripVertical className="text-gray-500" />
         <span className="text-xs text-gray-400">Drag</span>
       </div>
@@ -77,16 +83,24 @@ function SortableServiceCard({
   );
 }
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 export function ServicesManager() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    })
   );
 
   const fetchServices = async () => {
@@ -96,9 +110,15 @@ export function ServicesManager() {
     setServices(data);
     setLoading(false);
   };
+  const fetchCategories = async () => {
+    const res = await fetch("/api/categories");
+    const data = await res.json();
+    setCategories(data);
+  };
 
   useEffect(() => {
     fetchServices();
+    fetchCategories();
   }, []);
 
   const handleDragEnd = async (event: any) => {
@@ -128,6 +148,7 @@ export function ServicesManager() {
       price: 0,
       priority: services.length + 1,
       isActive: true,
+      categoryId: "",
     });
     setIsDialogOpen(true);
   };
@@ -204,8 +225,7 @@ export function ServicesManager() {
         </div>
         <Button
           onClick={handleAddService}
-          className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-        >
+          className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Add Service
         </Button>
@@ -219,12 +239,10 @@ export function ServicesManager() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+          onDragEnd={handleDragEnd}>
           <SortableContext
             items={services.map((s) => s.id)}
-            strategy={rectSortingStrategy}
-          >
+            strategy={rectSortingStrategy}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {services.map((service) => (
                 <SortableServiceCard key={service.id} service={service}>
@@ -245,15 +263,13 @@ export function ServicesManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEditService(service)}
-                          >
+                            onClick={() => handleEditService(service)}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteService(service.id)}
-                          >
+                            onClick={() => handleDeleteService(service.id)}>
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
@@ -264,6 +280,11 @@ export function ServicesManager() {
                       <div className="text-xs text-gray-500 truncate">
                         Features: {service.features.join(", ")}
                       </div>
+                      <p className="text-xs text-gray-500">
+                        Category:{" "}
+                        {categories.find((c) => c.id === service.categoryId)
+                          ?.name || "—"}
+                      </p>
                     </CardContent>
                   </Card>
                 </SortableServiceCard>
@@ -343,6 +364,27 @@ export function ServicesManager() {
                   placeholder="Upload service image"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <select
+                  value={editingService.categoryId || ""}
+                  onChange={(e) =>
+                    setEditingService({
+                      ...editingService,
+                      categoryId: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border px-3 py-2"
+                  required={!editingService.id} // ✅ required only for NEW
+                >
+                  <option value="">-- Select Category --</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="space-y-2">
                 <Label>Timeline</Label>
@@ -374,8 +416,7 @@ export function ServicesManager() {
                       variant="outline"
                       size="sm"
                       onClick={() => removeFeature(index)}
-                      disabled={editingService.features.length === 1}
-                    >
+                      disabled={editingService.features.length === 1}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -384,8 +425,7 @@ export function ServicesManager() {
                   type="button"
                   variant="outline"
                   onClick={addFeature}
-                  className="w-full bg-transparent"
-                >
+                  className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Feature
                 </Button>
@@ -410,15 +450,13 @@ export function ServicesManager() {
                 <Button
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
-                  disabled={isSaving}
-                >
+                  disabled={isSaving}>
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveService}
                   className="bg-green-600 hover:bg-green-700"
-                  disabled={isSaving}
-                >
+                  disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save Service"}
                 </Button>
               </div>

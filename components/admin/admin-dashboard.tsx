@@ -16,6 +16,9 @@ import {
   FileText,
   Contact2,
   Star,
+  Folder,
+  Folders,
+  BookAIcon,
 } from "lucide-react"
 import { UsersList } from "./users-list"
 import { RevenueStatistics } from "./revenue-statistics"
@@ -29,6 +32,8 @@ import { signOut } from "next-auth/react"
 import { FormsManager } from "./forms-manager"
 import ContactDetailsEditor from "./ContactDetailsEditor"
 import AdminReviewManager from "./AdminReviewManager"
+import { CategoriesManager } from "./CategoriesManager"
+import AdminServiceContentPageV2 from "./adminContentManager"
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -44,6 +49,8 @@ export function AdminDashboard() {
     { id: "requests", label: "Recent Requests", icon: Clock },
     { id: "services", label: "Services", icon: Settings },
     { id: "forms", label: "Form Builder", icon: FileText },
+    { id: "categories", label: "Categories", icon: Folders },
+    {id: "content", label: "Content", icon: BookAIcon},
     // { id: "pricing", label: "Pricing", icon: DollarSign },
     { id: "contact", label: "Contact Us", icon: MessageSquare },
     { id: "reviews", label: "Reviews", icon: Star },
@@ -68,7 +75,7 @@ export function AdminDashboard() {
           </Button>
         </div>
       </header>
-
+      
       <div className="flex flex-col lg:flex-row">
         {/* Mobile Navigation */}
         <div className="lg:hidden bg-white border-b">
@@ -123,6 +130,8 @@ export function AdminDashboard() {
           {activeTab === "services" && <ServicesManager />}
           {activeTab === "forms" && <FormsManager />}
           {/* {activeTab === "pricing" && <PricingManager />} */}
+          {activeTab === "categories" && <CategoriesManager />}
+          {activeTab === "content" && <AdminServiceContentPageV2 />}
           {activeTab === "contact" && <ContactManager />}
           {activeTab === "contactDetails" && <ContactDetailsEditor />}
           {activeTab === "reviews" && <AdminReviewManager />}
