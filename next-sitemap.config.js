@@ -1,12 +1,11 @@
+const fs = require("fs");
+
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl: "https://www.demzzixpert.online",
   generateRobotsTxt: true,
   sitemapSize: 5000,
-  changefreq: "daily",
-  priority: 0.7,
 
-  // 🚫 Exclude non-SEO pages
   exclude: [
     "/api/*",
     "/adminlogin",
@@ -18,11 +17,37 @@ module.exports = {
     "/menu"
   ],
 
-  // Optional: add robots.txt policies
+  additionalPaths: async (config) => {
+    // Read dynamic urls from file
+    const dynamicUrls = JSON.parse(fs.readFileSync("./dynamic-urls.json"));
+
+    return dynamicUrls.map((url) => ({
+      loc: url,
+      changefreq: "weekly",
+      priority: 0.9,
+      lastmod: new Date().toISOString(),
+    }));
+  },
+
   robotsTxtOptions: {
     policies: [
       { userAgent: "*", allow: "/" },
-      { userAgent: "*", disallow: ["/api/*", "/adminlogin", "/administration", "/unauthorized", "/login", "/signup", "/requests", "/menu"] }
+      {
+        userAgent: "*",
+        disallow: [
+          "/api/*",
+          "/adminlogin",
+          "/administration",
+          "/unauthorized",
+          "/login",
+          "/signup",
+          "/requests",
+          "/menu"
+        ],
+      },
+    ],
+    additionalSitemaps: [
+      "https://www.demzzixpert.online/sitemap.xml",
     ],
   },
 };
