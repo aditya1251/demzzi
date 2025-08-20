@@ -7,7 +7,7 @@ export async function GET() {
   const categories = await prisma.category.findMany({
     where: { isDeleted: false },
     orderBy: { priority: "asc" },
-    include: { services: {where: {isDeleted: false}} },
+    include: { services: {where: {isDeleted: false} , orderBy: {priority: "asc"}} },
   });
 
   return NextResponse.json(categories,{

@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, GripVertical } from "lucide-react";
+import { Plus, Edit, Trash2, GripVertical, ListOrdered } from "lucide-react";
 import { FileUploader } from "@/app/[form]/page";
 
 import {
@@ -30,6 +30,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+interface Service {
+  id: string;
+  title: string;
+  priority: number;
+  isDeleted: boolean;
+}
+
 interface Category {
   id: string;
   name: string;
@@ -37,17 +44,18 @@ interface Category {
   imageUrl?: string;
   priority: number;
   isDeleted: boolean;
+  services?: Service[];
 }
 
-function SortableCategoryCard({
-  category,
+function SortableItem({
+  id,
   children,
 }: {
-  category: Category;
+  id: string;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: category.id });
+    useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -79,6 +87,8 @@ export function CategoriesManager() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeServiceCategory, setActiveServiceCategory] =
+    useState<Category | null>(null);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -97,7 +107,7 @@ export function CategoriesManager() {
     fetchCategories();
   }, []);
 
-  const handleDragEnd = async (event: any) => {
+  const handleCategoryDragEnd = async (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -113,6 +123,45 @@ export function CategoriesManager() {
     });
   };
 
+  const handleServiceDragEnd = async (event: any, categoryId: string) => {
+  const { active, over } = event;
+  if (!over || active.id === over.id) return;
+
+  const categoryIndex = categories.findIndex((c) => c.id === categoryId);
+  if (categoryIndex === -1) return;
+
+  const category = categories[categoryIndex];
+  const oldIndex = category.services.findIndex((s) => s.id === active.id);
+  const newIndex = category.services.findIndex((s) => s.id === over.id);
+
+  const newServices = arrayMove(category.services, oldIndex, newIndex);
+
+  // update state
+  const updatedCategories = [...categories];
+  updatedCategories[categoryIndex] = {
+    ...category,
+    services: newServices,
+  };
+  setCategories(updatedCategories);
+
+  // also update activeServiceCategory so dialog re-renders
+  setActiveServiceCategory({
+    ...category,
+    services: newServices,
+  });
+
+  await fetch(`/api/admin/services/reorder`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orderedIds: newServices.map((s) => s.id),
+      categoryId,
+    }),
+  });
+};
+
+
+
   const handleAddCategory = () => {
     setEditingCategory({
       id: "",
@@ -120,6 +169,7 @@ export function CategoriesManager() {
       imageUrl: "",
       priority: categories.length + 1,
       isDeleted: false,
+      services: [],
     });
     setIsDialogOpen(true);
   };
@@ -190,7 +240,7 @@ export function CategoriesManager() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+          onDragEnd={handleCategoryDragEnd}
         >
           <SortableContext
             items={categories.map((c) => c.id)}
@@ -198,7 +248,7 @@ export function CategoriesManager() {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {categories.map((category) => (
-                <SortableCategoryCard key={category.id} category={category}>
+                <SortableItem key={category.id} id={category.id}>
                   <Card className="hover:shadow-lg transition-shadow rounded-b-lg">
                     <CardContent className="p-4 sm:p-6">
                       {category.imageUrl && (
@@ -227,6 +277,13 @@ export function CategoriesManager() {
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveServiceCategory(category)}
+                          >
+                            <ListOrdered className="w-4 h-4 text-blue-500" />
+                          </Button>
                         </div>
                       </div>
                       <p className="text-gray-600 text-xs">
@@ -234,14 +291,14 @@ export function CategoriesManager() {
                       </p>
                     </CardContent>
                   </Card>
-                </SortableCategoryCard>
+                </SortableItem>
               ))}
             </div>
           </SortableContext>
         </DndContext>
       )}
 
-      {/* Dialog for Add/Edit */}
+      {/* Category Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto mx-4">
           <DialogHeader>
@@ -298,6 +355,47 @@ export function CategoriesManager() {
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Reorder Dialog */}
+      <Dialog
+        open={!!activeServiceCategory}
+        onOpenChange={() => setActiveServiceCategory(null)}
+      >
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto mx-4">
+          <DialogHeader>
+            <DialogTitle>
+              Reorder Services ({activeServiceCategory?.name})
+            </DialogTitle>
+          </DialogHeader>
+
+          {activeServiceCategory?.services && (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(e) =>
+                handleServiceDragEnd(e, activeServiceCategory.id)
+              }
+            >
+              <SortableContext
+                items={activeServiceCategory.services.map((s) => s.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {activeServiceCategory.services.map((service) => (
+                    <SortableItem key={service.id} id={service.id}>
+                      <Card>
+                        <CardContent className="p-3">
+                          <p className="font-medium">{service.title}</p>
+                        </CardContent>
+                      </Card>
+                    </SortableItem>
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </DialogContent>
       </Dialog>

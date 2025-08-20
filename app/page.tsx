@@ -27,7 +27,6 @@ function LandingPage() {
     }
   }, [session]);
 
-
   return (
     <div className="min-h-screen relative bg-gray-50 pb-20 lg:pb-0">
       {/* Header - Desktop only */}
@@ -200,7 +199,6 @@ function LandingPage() {
       <TestimonialsSection />
 
       <Footer />
-     
 
       <MobileNav />
     </div>
@@ -209,25 +207,11 @@ function LandingPage() {
 
 // Main App Component
 export default function HomePage() {
-
-    
-
-  const { hasSeenSplash, setHasSeenSplash } = useApp();
-
-  const handleSplashComplete = () => {
-    setHasSeenSplash(true);
-  };
-
   return (
     <div className="relative">
-      {!hasSeenSplash ? (
-        <SplashScreen onComplete={handleSplashComplete} />
-      ) : (
-        <div className="animate-fade-in">
-         
-          <LandingPage />
-        </div>
-      )}
+      <div className="animate-fade-in">
+        <LandingPage />
+      </div>
     </div>
   );
 }

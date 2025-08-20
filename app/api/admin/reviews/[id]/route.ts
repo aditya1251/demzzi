@@ -18,6 +18,7 @@ export async function PUT(req: Request, { params }: Params) {
         name: body.name,
         role: body.role,
         review: body.review,
+        photo: body.photo,
         rating: body.rating,
       },
     });

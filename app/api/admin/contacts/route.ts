@@ -21,6 +21,7 @@ export async function GET() {
       phone: req.phone ?? "",
       subject: req.subject ?? "",
       message: req.message,
+      status: req.status,
       createdDate: req.createdAt.toISOString(),
       timeAgo: dayjs(req.createdAt).fromNow(),
     }))

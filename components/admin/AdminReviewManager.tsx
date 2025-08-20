@@ -14,7 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"; // assumes you're using shadcn/ui
+} from "@/components/ui/dialog";
+import { FileUploader } from "@/app/[form]/page";
+
 
 interface Review {
   id: string;
@@ -22,6 +24,7 @@ interface Review {
   role: string;
   rating: number;
   review: string;
+  photo?: string; // ✅ new field
 }
 
 export default function AdminReviewManager() {
@@ -35,6 +38,7 @@ export default function AdminReviewManager() {
     role: "",
     rating: 5,
     review: "",
+    photo: "", // ✅ added
   });
 
   useEffect(() => {
@@ -50,7 +54,11 @@ export default function AdminReviewManager() {
       });
   }, []);
 
-  const handleChange = (id: string, field: keyof Review, value: string | number) => {
+  const handleChange = (
+    id: string,
+    field: keyof Review,
+    value: string | number
+  ) => {
     setReviews((prev) =>
       prev.map((review) =>
         review.id === id ? { ...review, [field]: value } : review
@@ -110,7 +118,7 @@ export default function AdminReviewManager() {
       if (!res.ok) throw new Error();
       const created = await res.json();
       setReviews((prev) => [created, ...prev]);
-      setNewReview({ name: "", role: "", rating: 5, review: "" });
+      setNewReview({ name: "", role: "", rating: 5, review: "", photo: "" });
       toast.success("New review added.");
     } catch {
       toast.error("Failed to add review.");
@@ -134,7 +142,7 @@ export default function AdminReviewManager() {
                 <Plus className="w-4 h-4 mr-2" /> Add Review
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Add New Review</DialogTitle>
               </DialogHeader>
@@ -144,14 +152,18 @@ export default function AdminReviewManager() {
                   <Label>Name</Label>
                   <Input
                     value={newReview.name}
-                    onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewReview({ ...newReview, name: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Role</Label>
                   <Input
                     value={newReview.role}
-                    onChange={(e) => setNewReview({ ...newReview, role: e.target.value })}
+                    onChange={(e) =>
+                      setNewReview({ ...newReview, role: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -162,7 +174,10 @@ export default function AdminReviewManager() {
                     max={5}
                     value={newReview.rating}
                     onChange={(e) =>
-                      setNewReview({ ...newReview, rating: parseInt(e.target.value) })
+                      setNewReview({
+                        ...newReview,
+                        rating: parseInt(e.target.value),
+                      })
                     }
                   />
                 </div>
@@ -170,7 +185,20 @@ export default function AdminReviewManager() {
                   <Label>Review</Label>
                   <Textarea
                     value={newReview.review}
-                    onChange={(e) => setNewReview({ ...newReview, review: e.target.value })}
+                    onChange={(e) =>
+                      setNewReview({ ...newReview, review: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Photo (optional)</Label>
+                  <FileUploader
+                    name="photo"
+                    value={newReview.photo}
+                    onUpload={(url) =>
+                      setNewReview({ ...newReview, photo: url })
+                    }
+                    placeholder="Upload reviewer's photo"
                   />
                 </div>
 
@@ -193,13 +221,18 @@ export default function AdminReviewManager() {
           <p className="text-gray-600">No reviews available.</p>
         ) : (
           reviews.map((review) => (
-            <div key={review.id} className="space-y-4 border p-4 rounded-md bg-gray-50">
+            <div
+              key={review.id}
+              className="space-y-4 border p-4 rounded-md bg-gray-50"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Name</Label>
                   <Input
                     value={review.name}
-                    onChange={(e) => handleChange(review.id, "name", e.target.value)}
+                    onChange={(e) =>
+                      handleChange(review.id, "name", e.target.value)
+                    }
                   />
                 </div>
 
@@ -207,7 +240,9 @@ export default function AdminReviewManager() {
                   <Label>Role</Label>
                   <Input
                     value={review.role}
-                    onChange={(e) => handleChange(review.id, "role", e.target.value)}
+                    onChange={(e) =>
+                      handleChange(review.id, "role", e.target.value)
+                    }
                   />
                 </div>
 
@@ -228,7 +263,21 @@ export default function AdminReviewManager() {
                   <Label>Review</Label>
                   <Textarea
                     value={review.review}
-                    onChange={(e) => handleChange(review.id, "review", e.target.value)}
+                    onChange={(e) =>
+                      handleChange(review.id, "review", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Photo</Label>
+                  <FileUploader
+                    name={`photo-${review.id}`}
+                    value={review.photo}
+                    onUpload={(url) =>
+                      handleChange(review.id, "photo", url)
+                    }
+                    placeholder="Upload or change reviewer photo"
                   />
                 </div>
               </div>

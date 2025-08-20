@@ -12,6 +12,7 @@ import "swiper/css/navigation";
 interface Testimonial {
   id: string;
   name: string;
+  rating: number;
   role: string;
   quote: string; // alias for `review`
 }
@@ -30,9 +31,12 @@ export default function TestimonialsSection() {
         const formatted = data.map((r: any) => ({
           id: r.id,
           name: r.name,
+          rating: r.rating,
+          photo: r.photo,
           role: r.role,
           quote: r.review,
         }));
+        console.log(formatted)
         setTestimonials(formatted);
       })
       .catch(() => setTestimonials([]))
@@ -88,10 +92,14 @@ export default function TestimonialsSection() {
 function TestimonialCard({
   name,
   role,
+  rating,
+  photo,
   quote,
 }: {
   name: string;
+  rating: number;
   role: string;
+  photo?: string;
   quote: string;
 }) {
   return (
@@ -101,7 +109,7 @@ function TestimonialCard({
         className="flex items-center mb-4 space-x-1 text-yellow-500"
         aria-label="5 star review"
       >
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: rating }).map((_, i) => (
           <Star
             key={i}
             className="w-5 h-5 fill-yellow-400 stroke-yellow-500"
@@ -120,7 +128,7 @@ function TestimonialCard({
       {/* User info */}
       <div className="flex items-center space-x-3 mt-auto pt-4 border-t border-gray-100">
         <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-          {name.charAt(0)}
+          {photo? <img src={photo} alt={name} className="w-10 h-10 rounded-full" /> : name.charAt(0)}
         </div>
         <div>
           <p className="font-semibold text-green-900">{name}</p>

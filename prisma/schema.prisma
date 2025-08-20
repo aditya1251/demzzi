@@ -190,7 +190,7 @@ model ContactRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isDeleted Boolean  @default(false)
-
+  status      String   @default("new")
   user   User?   @relation(fields: [userId], references: [id])
   userId String?
 }
@@ -238,7 +238,7 @@ model Review {
   id        String   @id @default(cuid())
   name      String
   role      String
-  avatar    String?
+  photo    String?
   review    String
   rating    Int // 1–5
   createdAt DateTime @default(now())
