@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://www.demzzixpert.online
+
+# Sitemaps
+Sitemap: https://www.demzzixpert.online/sitemap.xml
