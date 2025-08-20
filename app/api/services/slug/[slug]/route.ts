@@ -2,21 +2,36 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: { slug: string } }
+) {
   const { slug } = params;
+
   const service = await prisma.service.findUnique({
     where: { slug },
-    include: {
-      servvicePageDetails: { include: { content: true } },
-      formFields: true,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      imageUrl: true,
+      price: true,
+      timeline: true,
+      features: true,
+      servvicePageDetails: {
+        include: { content: true },
+      },
+      formFields: { orderBy: { order: "asc" } },
     },
   });
 
-  if (!service) return new NextResponse("Not found", { status: 404 });
+  if (!service) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Normalize
-  const page = service.servvicePageDetails?.[0] ?? null;
-  const sections = (page?.content || []).sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+  const pageDetails = service.servvicePageDetails?.[0] ?? null;
+  const sections = (pageDetails?.content ?? []).sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
 
   return NextResponse.json({
     service: {
@@ -29,7 +44,11 @@ export async function GET(request: Request, { params }: { params: { slug: string
       timeline: service.timeline,
       features: service.features,
     },
-    formFields: service.formFields,
     sections,
+    formFields: service.formFields,
+  },{
+    headers: {
+      "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
+    },
   });
 }
