@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import FormInline from "@/components/ServiceFormInline";
+import Footer from "@/components/Footer";
 
 type Service = {
   id: string;
@@ -223,6 +224,7 @@ export default function ServicePageClient({ slug }: { slug: string }) {
             </div>
           </div>
         </div>
+        <Footer />
       </section>
     </main>
   );
