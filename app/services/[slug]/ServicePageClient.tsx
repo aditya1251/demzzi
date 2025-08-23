@@ -224,8 +224,8 @@ export default function ServicePageClient({ slug }: { slug: string }) {
             </div>
           </div>
         </div>
-        <Footer />
       </section>
+              <Footer />
     </main>
   );
 }
