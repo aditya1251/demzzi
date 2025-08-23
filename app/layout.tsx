@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "./providers";
+import Script from "next/script";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -91,6 +93,7 @@ export default function RootLayout({
           }}
         />
 
+
         {/* JSON-LD Schema for Site Navigation */}
         <script
           type="application/ld+json"
@@ -133,8 +136,23 @@ export default function RootLayout({
             }),
           }}
         />
+        <Script
+        async
+        src="https://www.googletagmanager.com/gtag/js?id=AW-17436097257"
+      />
+      <Script id="google-analytics">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'AW-17436097257');
+        `}
+      </Script>
+
       </head>
       <body className={inter.className}>
+        
         <AppProvider>{children}</AppProvider>
       </body>
     </html>
