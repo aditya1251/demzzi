@@ -3,132 +3,143 @@ import { prisma } from "@/lib/prisma";
 import { startOfDay, startOfWeek, startOfMonth, parseISO } from "date-fns";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
+  try {
+    const { searchParams } = new URL(req.url);
 
-  const range = searchParams.get("range") || "all";
-  const dateParam = searchParams.get("date"); // for custom single date
-  const startParam = searchParams.get("start"); // for custom range
-  const endParam = searchParams.get("end");
+    const range = searchParams.get("range") || "all";
+    const dateParam = searchParams.get("date");
+    const startParam = searchParams.get("start");
+    const endParam = searchParams.get("end");
 
-  const now = new Date();
-  let dateCondition: { gte?: Date; lte?: Date } | undefined;
+    const now = new Date();
+    let dateCondition: { gte?: Date; lte?: Date } | undefined;
 
-  // Predefined Ranges
-  if (range === "today") {
-    const today = startOfDay(now);
-    dateCondition = { gte: today };
-  } else if (range === "week") {
-    const start = startOfWeek(now, { weekStartsOn: 1 });
-    dateCondition = { gte: start };
-  } else if (range === "month") {
-    const start = startOfMonth(now);
-    dateCondition = { gte: start };
-  }
+    // Predefined ranges
+    if (range === "today") {
+      dateCondition = { gte: startOfDay(now) };
+    } else if (range === "week") {
+      dateCondition = { gte: startOfWeek(now, { weekStartsOn: 1 }) };
+    } else if (range === "month") {
+      dateCondition = { gte: startOfMonth(now) };
+    }
 
-  // Custom single date (e.g., ?date=2025-08-07)
-  if (dateParam) {
-    try {
+    // Single date filter
+    if (dateParam) {
       const parsed = parseISO(dateParam);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+      }
       const start = startOfDay(parsed);
       const end = new Date(start);
       end.setDate(end.getDate() + 1);
       dateCondition = { gte: start, lte: end };
-    } catch (err) {
-      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
     }
-  }
 
-  // Custom range (e.g., ?start=2025-08-01&end=2025-08-07)
-  if (startParam && endParam) {
-    try {
-      const start = startOfDay(parseISO(startParam));
-      const end = startOfDay(parseISO(endParam));
-      end.setDate(end.getDate() + 1); // include full end day
-      dateCondition = { gte: start, lte: end };
-    } catch (err) {
-      return NextResponse.json({ error: "Invalid custom range" }, { status: 400 });
+    // Custom date range filter
+    if (startParam && endParam) {
+      const start = parseISO(startParam);
+      const end = parseISO(endParam);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return NextResponse.json({ error: "Invalid custom range" }, { status: 400 });
+      }
+      const s = startOfDay(start);
+      const e = startOfDay(end);
+      e.setDate(e.getDate() + 1); // include full end day
+      dateCondition = { gte: s, lte: e };
     }
-  }
 
-  // Fetch data with optional filters
-  const [userCount, revenueSum, pendingRequests, completedRequests] = await Promise.all([
-    prisma.user.count({
-      where: {
-        isDeleted: false,
-        ...(dateCondition ? { createdAt: dateCondition } : {}),
-      },
-    }),
-    prisma.revenue.aggregate({
-      _sum: { amount: true },
-      where: {
-        isDeleted: false,
-        ...(dateCondition ? { createdAt: dateCondition } : {}),
-      },
-    }),
-    prisma.request.count({
-      where: {
-        status: { in: ["PENDING", "NEW"] },
-        isDeleted: false,
-        ...(dateCondition ? { updatedAt: dateCondition } : {}),
-      },
-    }),
-    prisma.request.count({
-      where: {
-        status: "COMPLETED",
-        isDeleted: false,
-        ...(dateCondition ? { updatedAt: dateCondition } : {}),
-      },
-    }),
-  ]);
+    // Fetch stats
+    const [userCount, revenueSum, pendingRequests, completedRequests] =
+      await Promise.all([
+        prisma.user.count({
+          where: {
+            isDeleted: false,
+            ...(dateCondition ? { createdAt: dateCondition } : {}),
+          },
+        }),
+        prisma.revenue.aggregate({
+          _sum: { amount: true },
+          where: {
+            isDeleted: false,
+            ...(dateCondition ? { createdAt: dateCondition } : {}),
+          },
+        }),
+        prisma.request.count({
+          where: {
+            status: { in: ["PENDING", "NEW"] },
+            isDeleted: false,
+            ...(dateCondition ? { updatedAt: dateCondition } : {}),
+          },
+        }),
+        prisma.request.count({
+          where: {
+            status: "COMPLETED",
+            isDeleted: false,
+            ...(dateCondition ? { updatedAt: dateCondition } : {}),
+          },
+        }),
+      ]);
 
-  const recentActivity = await prisma.$transaction([
-    prisma.user.findMany({
-      where: {
-        isDeleted: false,
-        ...(dateCondition ? { createdAt: dateCondition } : {}),
-      },
-      orderBy: { createdAt: "desc" },
-      take: 3,
-      select: { name: true, createdAt: true },
-    }),
-    prisma.request.findMany({
-      where: {
-        status: "PENDING",
-        isDeleted: false,
-        ...(dateCondition ? { updatedAt: dateCondition } : {}),
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 3,
-      select: {
-        updatedAt: true,
-        status: true,
-        service: {
-          select: { title: true },
+    // Fetch recent activity
+    const recentActivity = await prisma.$transaction([
+      prisma.user.findMany({
+        where: {
+          isDeleted: false,
+          ...(dateCondition ? { createdAt: dateCondition } : {}),
         },
-      },
-    }),
-    prisma.revenue.findMany({
-      where: {
-        isDeleted: false,
-        ...(dateCondition ? { createdAt: dateCondition } : {}),
-      },
-      orderBy: { createdAt: "desc" },
-      take: 3,
-      select: { amount: true, createdAt: true, label: true },
-    }),
-  ]);
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        select: { name: true, createdAt: true },
+      }),
+      prisma.request.findMany({
+        where: {
+          status: "PENDING",
+          isDeleted: false,
+          ...(dateCondition ? { updatedAt: dateCondition } : {}),
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 3,
+        select: {
+          updatedAt: true,
+          status: true,
+          service: { select: { title: true } },
+        },
+      }),
+      prisma.revenue.findMany({
+        where: {
+          isDeleted: false,
+          ...(dateCondition ? { createdAt: dateCondition } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        select: { amount: true, createdAt: true, label: true },
+      }),
+    ]);
 
-  return NextResponse.json({
-    stats: {
-      userCount,
-      revenue: revenueSum._sum.amount || 0,
-      pending: pendingRequests,
-      completed: completedRequests,
-    },
-    recent: {
-      users: recentActivity[0],
-      requests: recentActivity[1],
-      revenues: recentActivity[2],
-    },
-  });
+    return NextResponse.json({
+      stats: {
+        userCount,
+        revenue: revenueSum?._sum?.amount ?? 0,
+        pending: pendingRequests,
+        completed: completedRequests,
+      },
+      recent: {
+        users: recentActivity[0] ?? [],
+        requests: recentActivity[1] ?? [],
+        revenues: recentActivity[2] ?? [],
+      },
+    });
+  } catch (err: any) {
+    console.error("🚨 API /admin/overview error:", err);
+
+    // Always return safe structure so frontend doesn’t crash
+    return NextResponse.json(
+      {
+        error: "Internal Server Error",
+        stats: { userCount: 0, revenue: 0, pending: 0, completed: 0 },
+        recent: { users: [], requests: [], revenues: [] },
+      },
+      { status: 500 }
+    );
+  }
 }
